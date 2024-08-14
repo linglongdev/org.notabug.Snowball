@@ -1,0 +1,56 @@
+version: "1"
+
+package:
+  id: org.notabug.Snowball
+  name: Snowball
+  version: 3.0.0.0
+  kind: app
+  description: |
+     Use your keyboard arrow keys to move from left to right or left and right click.
+
+base: org.deepin.foundation/23.0.0
+runtime: org.deepin.Runtime/23.0.1
+
+command:
+  - /opt/apps/org.notabug.Snowball/files/bin/snowball
+
+sources:
+  - kind: git
+    url: https://notabug.org/Vandarin/Snowball.git
+    version: master
+    commit: c96fba5e87e654e2f1d5922395560fb4a61153b0
+
+  - kind: git
+    url: https://github.com/upx/upx.git
+    version: master
+    commit: 1427b8137a6a3fcbf541e529d9de349230f4ebae
+
+  - kind: file
+    url: https://community-packages.deepin.com/beige/pool/main/g/glfw3/libglfw3_3.3.2-2_amd64.deb
+    digest: 07135a46434466b88f85ad6dbb34bc8dc4f49c822f0d07a58a665ed11179486b
+
+  - kind: file
+    url: https://community-packages.deepin.com/beige/pool/main/g/glfw3/libglfw3-dev_3.3.2-2_amd64.deb
+    digest: b32c7de448ab1946595d9e0472a097af40be3dad1fc6f3a7e47a378284676859
+
+build: |
+  echo "" > $PREFIX/packages.list
+  bash ./install_dep linglong/sources "$PREFIX"
+
+  cd /project/linglong/sources/upx.git/
+  cmake -Bbuild \
+        -DCMAKE_INSTALL_PREFIX=${PREFIX} \
+        -DCMAKE_INSTALL_LIBDIR=${PREFIX}/lib/${TRIPLET}
+  cmake --build build
+  cmake --build build --target install
+  
+  cd /project/linglong/sources/Snowball.git/
+  gcc main.c glad_gl.c -Ofast -lglfw -lm -o snowball
+  strip --strip-unneeded snowball
+  upx --lzma --best snowball
+  mkdir -p ${PREFIX}/bin
+  mkdir -p ${PREFIX}/share/applications/
+  mkdir -p ${PREFIX}/share/icons/hicolor/192x192/apps/
+  cp snowball ${PREFIX}/bin/snowball
+  cp flatpak/snowball.desktop ${PREFIX}/share/applications/snowball.desktop
+  cp flatpak/snowball.png ${PREFIX}/share/icons/hicolor/192x192/apps/snowball.png
